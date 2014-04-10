@@ -7,3 +7,12 @@
 *.cmx
 *.cmxs
 *.cmxa
+*~
+*.blg
+*.log
+report.pdf
+*.toc
+*.aux
+*.out
+*.bbl
+*.lof
