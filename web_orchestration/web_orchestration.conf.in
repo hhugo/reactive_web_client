@@ -6,6 +6,7 @@
   <server>
     <port>%%PORT%%</port>
     %%% Only set for running, not for testing
+    <mimefile>/etc/mime.types</mimefile>
     %%USERGROUP%%
     <logdir>%%LOGDIR%%</logdir>
     <datadir>%%DATADIR%%</datadir>
