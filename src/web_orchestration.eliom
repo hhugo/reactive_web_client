@@ -68,7 +68,7 @@ let bus = Eliom_bus.create Json.t<vmessages>
         (To_dom.of_element html_elt) f)
 
 
-  let seeking = fun ev ->
+  let seeking ev =
     let target = Js.Optdef.get (ev##target) (fun _ -> assert false) in
     let t = ((Js.Unsafe.coerce target)##value) in
     Firebug.console##log (Js.string (string_of_float t));
@@ -90,7 +90,13 @@ let bus = Eliom_bus.create Json.t<vmessages>
     set_video_signal (Progress t)
 
 
-  let progress ev _ = Firebug.console##log (Js.string "test"); Lwt.return ()
+  let progress ev _ =
+    let target = Js.Optdef.get (ev##target) (fun _ -> assert false) in
+    let t = ((Js.Unsafe.coerce target)##currentTime) in
+    Firebug.console##log (Js.string (string_of_float t));
+    set_video_signal (Progress t);
+    Lwt.return ()
+
 
   let progress_bar vid : Html5_types.input elt React.signal =
     let vid = (Js.Unsafe.coerce (To_dom.of_element vid)) in
@@ -136,7 +142,7 @@ let vtest () =
              a_onseeking {{ seeking }};
              a_onplay {{ play }};
              a_onpause {{ pause }};
-             a_ontimeupdate {{ progress2 }}
+             (* a_ontimeupdate {{ progress2 }} *)
             ]
          ~src:(video_uri)
          (* ~src:(Xml.uri_of_string video_test_url) *)

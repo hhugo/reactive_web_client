@@ -1,0 +1,16 @@
+_server/stream.cmo :
+_server/stream.cmx :
+_server/stream.cmo : _server/stream.type_mli
+_server/stream.cmx : _server/stream.type_mli
+_server/web_orchestration.cmo :
+_server/web_orchestration.cmx :
+_server/web_orchestration.cmo : _server/web_orchestration.type_mli
+_server/web_orchestration.cmx : _server/web_orchestration.type_mli
+_client/stream.cmo :
+_client/stream.cmx :
+_client/stream.cmo : _server/stream.type_mli
+_client/stream.cmx : _server/stream.type_mli
+_client/web_orchestration.cmo :
+_client/web_orchestration.cmx :
+_client/web_orchestration.cmo : _server/web_orchestration.type_mli
+_client/web_orchestration.cmx : _server/web_orchestration.type_mli

@@ -1,0 +1,4 @@
+_client/stream.cmo :
+_client/stream.cmx :
+_client/stream.cmo : _server/stream.type_mli
+_client/stream.cmx : _server/stream.type_mli

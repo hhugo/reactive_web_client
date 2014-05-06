@@ -1,0 +1,9 @@
+val __eliom__compilation_unit_id__581709902 : unit
+val main_service :
+  (unit, unit,
+   [> `Attached of
+        ([> `Internal of [> `Service ] ], [> `Get ]) Eliom_service.a_s ],
+   [ `WithoutSuffix ], unit, unit,
+   [< Eliom_service.registrable > `Registrable ],
+   [> Eliom_service.http_service ])
+  Eliom_service.service
