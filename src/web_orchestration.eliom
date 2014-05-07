@@ -29,7 +29,7 @@ let bus = Eliom_bus.create Json.t<vmessages>
     (* Dom_html.window##alert (Js.string (Format.sprintf "%f %f" a b)); *)
 
   let bc_video_signal, set_bc_video_signal = React.S.create BPause
-  let video_signal, set_video_signal = React.S.create Pause
+  let video_signal, set_video_signal = React.S.create (Progress 0.)
 
   let react_bc_video : unit React.signal =
     let react m = ignore (Eliom_bus.write %bus m)
@@ -44,9 +44,7 @@ let bus = Eliom_bus.create Json.t<vmessages>
       | Progress f -> ()
     in React.S.map react video_signal
 
-  let append d elmt =
-    Dom.appendChild (To_dom.of_element d)
-      (To_dom.of_element elmt)
+  let append = Manip.appendChild
 
   let action_of_message = function
     | BPlay -> Play
@@ -68,12 +66,13 @@ let bus = Eliom_bus.create Json.t<vmessages>
         (To_dom.of_element html_elt) f)
 
 
-  let seeking ev =
+  let seeking duration ev =
     let target = Js.Optdef.get (ev##target) (fun _ -> assert false) in
-    let t = ((Js.Unsafe.coerce target)##value) in
-    Firebug.console##log (Js.string (string_of_float t));
-    (* set_bc_video_signal (BSeek t); *)
-    set_video_signal (Seek t)
+    let value_input = ((Js.Unsafe.coerce target)##value) in
+    let video_time = value_input /. 100. *. duration in
+    (* Firebug.console##log (t); *)
+    set_bc_video_signal (BSeek video_time);
+    set_video_signal (Seek video_time)
 
   let play _ =
     set_bc_video_signal BPlay;
@@ -93,7 +92,6 @@ let bus = Eliom_bus.create Json.t<vmessages>
   let progress ev _ =
     let target = Js.Optdef.get (ev##target) (fun _ -> assert false) in
     let t = ((Js.Unsafe.coerce target)##currentTime) in
-    Firebug.console##log (Js.string (string_of_float t));
     set_video_signal (Progress t);
     Lwt.return ()
 
@@ -101,15 +99,13 @@ let bus = Eliom_bus.create Json.t<vmessages>
   let progress_bar vid : Html5_types.input elt React.signal =
     let vid = (Js.Unsafe.coerce (To_dom.of_element vid)) in
     let react up =
-      let value = vid##currentTime /. vid##duration *. 100. in
+      let current, duration = vid##currentTime, vid##duration in
+      let value = current /. duration *. 100. in
       D.(float_input ~input_type:`Range ()
-           ~a:[a_onchange seeking]
-           ~value:value)
-
-      (* let button = string_input ~input_type:`Submit () ~value:"Pause" in *)
-      (* D.(progress ~a:[a_max 100.;
-         a_onchange seeking; a_float_value value] []) *)
-
+           ~a:[a_onchange (seeking duration);
+               a_input_min 0.; a_input_max 100.;
+              a_value (sprintf "%f" value)]
+           )
     in
     React.S.map react video_signal
 
@@ -128,7 +124,7 @@ let video_test_url =
 
 let video_uri = (Html5.D.make_uri
               ~service:(Eliom_service.static_dir ())
-              ["sin.webm"])
+              ["hb.mp3"])
 
 
 
@@ -137,20 +133,18 @@ let video_uri = (Html5.D.make_uri
 
 let vtest () =
   let vid =
-    D.(video
+    D.(audio
          ~a:[(* a_controls `Controls; *)
-             a_onseeking {{ seeking }};
-             a_onplay {{ play }};
-             a_onpause {{ pause }};
-             (* a_ontimeupdate {{ progress2 }} *)
-            ]
+             (* a_onplay {{ play }}; *)
+             (* a_onpause {{ pause }}; *)
+             (* a_ontimeupdate {{ progress2 }} *)]
          ~src:(video_uri)
          (* ~src:(Xml.uri_of_string video_test_url) *)
     )[ (*D.source ~src:video_uri ~a:[D.a_mime_type "video/mp4"] ; *)
      D.pcdata "alt"]
   in
   let _ = {unit{
-
+    set_
     bind_event "timeupdate" %vid progress;
     Lwt_js_events.async (fun () ->
       ignore (react_video (To_dom.of_element %vid));
