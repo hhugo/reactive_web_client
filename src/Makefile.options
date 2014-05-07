@@ -3,7 +3,7 @@
 #           SETTINGS FOR THE ELIOM PROJECT web_orchestration
 #----------------------------------------------------------------------
 
-PROJECT_NAME := web_orchestration
+PROJECT_NAME := react_player
 
 # Source files for the server
 SERVER_FILES := $(wildcard *.eliomi *.eliom)
