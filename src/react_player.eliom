@@ -72,10 +72,10 @@ let bus = Eliom_bus.create Json.t<vmessage>
 
   let disable_event event_string html_elt =
     let event = Lwt_js_events.make_event (Dom_html.Event.make event_string) in
-    html_elt##removeEventListner event
+    (Js.Unsafe.coerce html_elt)##removeEventListener event
 
   let get_target ev =
-    Js.Unsafe.coerce (Js.Optdef.get (ev##target) (fun _ -> assert false))
+    Js.Optdef.get (ev##target) (fun _ -> assert false)
 
 
   (* let stop_update_range vid _ = *)
@@ -86,25 +86,36 @@ let bus = Eliom_bus.create Json.t<vmessage>
   (* let reload_update_range vid _ = *)
   (*   bind_event "timeupdate" vid progress *)
 
-  let progress_bar : Html5_types.input elt React.signal =
-    let react (current, duration) =
-      let value = if duration = 0. then 0. else current /. duration *. 100. in
-      let oninput ev =
-        let value_input = (get_target ev)##value in
-        let video_time = (value_input /. 100. *. duration) in
-        set_bc_video_signal (BSeek video_time)
-      in
-      D.(float_input ~input_type:`Range ()
-           ~a:[a_oninput oninput; a_input_min 0.; a_input_max 100.;
-               a_onmousedown (fun _ -> set_block_progress_signal true);
-               a_onmouseup (fun _ -> set_block_progress_signal false);
-               a_value (sprintf "%f" value)])
+  let progress_bar : Html5_types.input elt =
+    let value = React.S.map (fun (current, duration) ->
+        if duration = 0. then 0. else current /. duration *. 100.)
+        progress_signal in
+    let duration_s = React.S.map snd progress_signal in
+    let oninput ev =
+      let target : Dom_html.inputElement Js.t = Js.Unsafe.coerce (get_target ev) in
+      let value_input = Js.parseFloat (target##value) in
+      let video_time = (value_input /. 100. *. (React.S.value duration_s)) in
+      set_bc_video_signal (BSeek video_time)
     in
-    React.S.map react progress_signal
-
-
+    D.(float_input ~input_type:`Range ()
+         ~a:[a_oninput oninput; a_input_min 0.; a_input_max 100.;
+             a_onmousedown (fun _ -> set_block_progress_signal true);
+             a_onmouseup (fun _ -> set_block_progress_signal false);
+             R.a_value (React.S.map (sprintf "%f") value)])
 }}
 
+
+{client{
+
+class type audio = object
+  inherit Dom_html.element
+  method currentTime : float Js.prop
+  method duration : float Js.prop
+  method play : unit Js.meth
+  method pause : unit Js.meth
+end
+
+}}
 
 let media_test_url =
   "http://download.blender.org/durian/trailer/sintel_trailer-480p.mp4"
@@ -117,7 +128,7 @@ let media_tag () =
   let vid = D.(audio ~src:(media_uri))[D.pcdata "alt"] in
   let _ = {unit{
     Lwt_js_events.async (fun () ->
-      let vid = Js.Unsafe.coerce (To_dom.of_element %vid) in
+      let vid : audio Js.t = Js.Unsafe.coerce (To_dom.of_element %vid) in
       let timeupdate _ _ =
         set_progress_signal (vid##currentTime, vid##duration);
         Lwt.return ()
@@ -152,7 +163,7 @@ let () =
       let progress_div = Html5.D.div [] in
       let media = media_tag () in
       Lwt.return D.(
-        let _ = {unit{append %progress_div (R.node progress_bar)}} in
+        let _ = {unit{append %progress_div progress_bar}} in
         Eliom_tools.D.html
           ~title:"Media"
           ~css:[]
